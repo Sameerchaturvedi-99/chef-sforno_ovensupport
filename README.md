@@ -1,1 +1,0 @@
-# chef-sforno_ovensupport
