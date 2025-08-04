@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chef's Forno Oven Support</title>
+  <style>
+    body {
+      font-family: "Ink Free", cursive;
+      background: url('https://i.postimg.cc/XqGHq7Zx/673dc71d66dd8f8c353b7dff6eff54ac.jpg') no-repeat center center fixed;
+      background-size: cover;
+      color: #5a341b;
+      padding: 20px;
+    }
+    .container {
+      max-width: 700px;
+      margin: auto;
+      padding: 20px;
+      background: #fff3e0;
+      border-radius: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      position: relative;
+    }
+    h1, h2 {
+      text-align: center;
+      color: #a04000;
+    }
+    input, select, textarea, button {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+      font-family: "Ink Free", cursive;
+    }
+    button {
+      background-color: #ff914d;
+      color: white;
+      cursor: pointer;
+      border: none;
+    }
+    button:hover {
+      background-color: #e67300;
+    }
+    #popup {
+      position: fixed;
+      top: 20%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #fffbe6;
+      border: 2px solid #ffa94d;
+      padding: 30px;
+      border-radius: 15px;
+      display: none;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      z-index: 999;
+    }
+    #popup .close {
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      cursor: pointer;
+      font-size: 18px;
+    }
+    .note {
+      font-size: 14px;
+      color: #c0392b;
+      display: none;
+    }
+    .logo {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      width: 120px;
+      height: auto;
+    }
+    #loader {
+      display: none;
+      text-align: center;
+      margin: 20px 0;
+    }
+    #loader img {
+      width: 120px;
+    }
+    @media (max-width: 600px) {
+      .logo {
+        width: 90px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <img src="https://i.postimg.cc/Fz5WfXj4/CHEF-FORNO-LOGO.png" class="logo" alt="Logo" />
+  <div class="container">
+    <h1>Chef's Forno Oven Support</h1>
+
+    <label for="serialLookup">Enter Serial Number:</label>
+    <input type="text" id="serialLookup" placeholder="e.g., CF123456" />
+    <button onclick="checkSerial()">Verify Serial</button>
+
+    <div id="loader"><img src="https://i.postimg.cc/C1bvyM2q/Pizza-Slices.gif" alt="Loading..."></div>
+
+    <div id="productDetails" style="display:none;"></div>
+    <button id="raiseRequestBtn" onclick="showForm()" style="display:none;">Raise a Request</button>
+
+    <div class="form-section" id="formSection" style="display:none;">
+      <h2>Raise a Support Request</h2>
+      <form id="supportForm">
+        <input type="text" name="name" placeholder="Your Name" required />
+        <input type="email" name="email" placeholder="Your Email" required />
+        <input type="text" name="serialNumber" id="serialField" readonly />
+
+        <select name="category" id="issueCategory" required>
+          <option value="">Select Issue Category</option>
+          <option value="Heating Issue">Heating Issue</option>
+          <option value="Sensor Issue">Sensor Issue</option>
+          <option value="Gas Leakage Issue">Gas Leakage Issue</option>
+          <option value="Burner Issue">Burner Issue</option>
+          <option value="Other Issue">Other Issue</option>
+        </select>
+        <div class="note" id="sensorNote">Kindly select only if you have an AG MODEL.</div>
+
+        <textarea name="description" placeholder="Describe your issue" required></textarea>
+        <select name="severity" required>
+          <option value="">Select Severity</option>
+          <option value="Low">Low</option>
+          <option value="Moderate">Moderate</option>
+          <option value="High">High</option>
+        </select>
+        <button type="submit">Submit</button>
+      </form>
+    </div>
+
+    <div class="tracking-section">
+      <h2>Track Your Request</h2>
+      <input type="text" id="trackInput" placeholder="Enter Tracking ID" />
+      <button onclick="trackStatus()">Track</button>
+      <div id="trackResult"></div>
+    </div>
+  </div>
+
+  <div id="popup">
+    <span class="close" onclick="document.getElementById('popup').style.display='none'">❌</span>
+    <p>🍕 Your request has been submitted!</p>
+    <p>Tracking ID: <strong id="generatedId"></strong></p>
+    <p>Please copy and save this ID to track your request.</p>
+  </div>
+
+  <script>
+    const APP_URL = "https://script.google.com/macros/s/AKfycbwBB-FTjufp9rfdfdGog_zXC8ZkFK8W7H01vIfcPWgORQURv9tA8EkYvhUpLihrKb-v/exec";
+
+    function showLoader(show) {
+      document.getElementById("loader").style.display = show ? "block" : "none";
+    }
+
+    function checkSerial() {
+      const serial = document.getElementById("serialLookup").value.trim();
+      if (!serial) return alert("Enter a serial number.");
+      showLoader(true);
+
+      fetch(`${APP_URL}?action=lookupSerial&serial=${serial}`)
+        .then(res => res.json())
+        .then(data => {
+          showLoader(false);
+          if (data.error) {
+            alert("Serial number not found.");
+          } else {
+            document.getElementById("productDetails").style.display = "block";
+            document.getElementById("productDetails").innerHTML = `
+              <strong>Model:</strong> ${data.Model}<br>
+              <strong>Year:</strong> ${data["Manufacturing Year"]}<br>
+              <strong>Warranty Expiry:</strong> ${data["Warranty Expiry"]}
+            `;
+            document.getElementById("serialField").value = serial;
+            document.getElementById("raiseRequestBtn").style.display = "block";
+          }
+        })
+        .catch(() => {
+          showLoader(false);
+          alert("Error checking serial.");
+        });
+    }
+
+    function showForm() {
+      document.getElementById("formSection").style.display = "block";
+      window.scrollTo({ top: document.getElementById("formSection").offsetTop, behavior: 'smooth' });
+    }
+
+    document.getElementById("issueCategory").addEventListener("change", function () {
+      document.getElementById("sensorNote").style.display =
+        this.value === "Sensor Issue" ? "block" : "none";
+    });
+
+    document.getElementById("supportForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      const jsonData = {};
+      formData.forEach((value, key) => jsonData[key] = value);
+
+      fetch(APP_URL, {
+        method: "POST",
+        body: JSON.stringify(jsonData)
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.trackingId) {
+          document.getElementById("generatedId").textContent = data.trackingId;
+          document.getElementById("popup").style.display = "block";
+          document.getElementById("supportForm").reset();
+        } else {
+          alert("Submission failed.");
+        }
+      })
+      .catch(() => alert("Submission error."));
+    });
+
+    function trackStatus() {
+      const id = document.getElementById("trackInput").value.trim();
+      if (!id) return alert("Enter a tracking ID.");
+      showLoader(true);
+
+      fetch(`${APP_URL}?action=track&trackingId=${id}`)
+        .then(res => res.json())
+        .then(data => {
+          showLoader(false);
+          if (data.error) {
+            document.getElementById("trackResult").innerHTML = "<span style='color:red;'>Invalid tracking ID.</span>";
+          } else {
+            document.getElementById("trackResult").innerHTML = `
+              <strong>Name:</strong> ${data.Name}<br>
+              <strong>Email:</strong> ${data.Email}<br>
+              <strong>Serial:</strong> ${data["Serial Number"]}<br>
+              <strong>Category:</strong> ${data["Issue Category"]}<br>
+              <strong>Severity:</strong> ${data.Severity}<br>
+              <strong>Status:</strong> ${data.Status || "Pending"}<br>
+              <strong>Submitted:</strong> ${data.Timestamp}
+            `;
+          }
+        })
+        .catch(() => {
+          showLoader(false);
+          alert("Error fetching status.");
+        });
+    }
+  </script>
+</body>
+</html>
