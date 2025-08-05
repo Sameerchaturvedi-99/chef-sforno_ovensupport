@@ -3,15 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Chef's Forno Oven Support</title>
+  <title>Chef’s Forno | The Service Atelier</title>
+  <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
   <style>
     body {
-      font-family: "Ink Free", cursive;
+      font-family: 'Patrick Hand', cursive;
       background: url('https://i.postimg.cc/XqGHq7Zx/673dc71d66dd8f8c353b7dff6eff54ac.jpg') no-repeat center center fixed;
       background-size: cover;
       color: #5a341b;
       padding: 20px;
     }
+
     .container {
       max-width: 700px;
       margin: auto;
@@ -21,10 +23,12 @@
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
       position: relative;
     }
+
     h1, h2 {
       text-align: center;
       color: #a04000;
     }
+
     input, select, textarea, button {
       width: 100%;
       padding: 12px;
@@ -32,17 +36,26 @@
       border-radius: 10px;
       border: 1px solid #ccc;
       font-size: 16px;
-      font-family: "Ink Free", cursive;
+      font-family: 'Patrick Hand', cursive;
     }
+
     button {
       background-color: #ff914d;
       color: white;
       cursor: pointer;
       border: none;
     }
+
     button:hover {
       background-color: #e67300;
     }
+
+    .note {
+      font-size: 14px;
+      color: #c0392b;
+      display: none;
+    }
+
     #popup {
       position: fixed;
       top: 20%;
@@ -56,6 +69,7 @@
       box-shadow: 0 0 10px rgba(0,0,0,0.3);
       z-index: 999;
     }
+
     #popup .close {
       position: absolute;
       top: 8px;
@@ -63,43 +77,67 @@
       cursor: pointer;
       font-size: 18px;
     }
-    .note {
-      font-size: 14px;
-      color: #c0392b;
-      display: none;
-    }
+
     .logo {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      width: 120px;
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      width: 130px;
       height: auto;
+      z-index: 999;
     }
-    #loader {
-      display: none;
-      text-align: center;
-      margin: 20px 0;
-    }
-    #loader img {
-      width: 120px;
-    }
+
     @media (max-width: 600px) {
       .logo {
         width: 90px;
+        top: 15px;
+        left: 15px;
       }
+    }
+
+    #loaderOverlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(255, 243, 224, 0.85);
+      z-index: 9999;
+      text-align: center;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    #loaderOverlay img {
+      width: 120px;
+    }
+
+    #loaderOverlay p {
+      margin-top: 10px;
+      font-size: 18px;
+      color: #a04000;
     }
   </style>
 </head>
 <body>
-  <img src="https://i.postimg.cc/Fz5WfXj4/CHEF-FORNO-LOGO.png" class="logo" alt="Logo" />
+
+  <!-- Logo -->
+  <img src="https://i.postimg.cc/Fz5WfXj4/CHEF-FORNO-LOGO.png" class="logo" alt="Chef's Forno Logo" />
+
+  <!-- Loader -->
+  <div id="loaderOverlay">
+    <img src="https://i.postimg.cc/C1bvyM2q/Pizza-Slices.gif" alt="Loading...">
+    <p>Fetching the right toppings...</p>
+  </div>
+
   <div class="container">
-    <h1>Chef's Forno Oven Support</h1>
+    <h1>Chef’s Forno | The Service Atelier</h1>
 
     <label for="serialLookup">Enter Serial Number:</label>
     <input type="text" id="serialLookup" placeholder="e.g., CF123456" />
     <button onclick="checkSerial()">Verify Serial</button>
-
-    <div id="loader"><img src="https://i.postimg.cc/C1bvyM2q/Pizza-Slices.gif" alt="Loading..."></div>
 
     <div id="productDetails" style="display:none;"></div>
     <button id="raiseRequestBtn" onclick="showForm()" style="display:none;">Raise a Request</button>
@@ -151,14 +189,14 @@
     const APP_URL = "https://script.google.com/macros/s/AKfycbwBB-FTjufp9rfdfdGog_zXC8ZkFK8W7H01vIfcPWgORQURv9tA8EkYvhUpLihrKb-v/exec";
 
     function showLoader(show) {
-      document.getElementById("loader").style.display = show ? "block" : "none";
+      document.getElementById("loaderOverlay").style.display = show ? "flex" : "none";
     }
 
     function checkSerial() {
       const serial = document.getElementById("serialLookup").value.trim();
       if (!serial) return alert("Enter a serial number.");
-      showLoader(true);
 
+      showLoader(true);
       fetch(`${APP_URL}?action=lookupSerial&serial=${serial}`)
         .then(res => res.json())
         .then(data => {
@@ -198,12 +236,14 @@
       const jsonData = {};
       formData.forEach((value, key) => jsonData[key] = value);
 
+      showLoader(true);
       fetch(APP_URL, {
         method: "POST",
         body: JSON.stringify(jsonData)
       })
       .then(res => res.json())
       .then(data => {
+        showLoader(false);
         if (data.trackingId) {
           document.getElementById("generatedId").textContent = data.trackingId;
           document.getElementById("popup").style.display = "block";
@@ -212,15 +252,18 @@
           alert("Submission failed.");
         }
       })
-      .catch(() => alert("Submission error."));
+      .catch(() => {
+        showLoader(false);
+        alert("Submission error.");
+      });
     });
 
     function trackStatus() {
       const id = document.getElementById("trackInput").value.trim();
       if (!id) return alert("Enter a tracking ID.");
-      showLoader(true);
 
-      fetch(`${APP_URL}?action=track&trackingId=${id}`)
+      showLoader(true);
+      fetch(`${APP_URL}?action=trackRequest&trackingId=${id}`)
         .then(res => res.json())
         .then(data => {
           showLoader(false);
